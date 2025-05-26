@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -8,6 +10,15 @@ android {
     namespace = "com.example.taller3"
     compileSdk = 35
 
+    val localProperties = Properties().apply {
+        val file = rootProject.file("local.properties")
+        if (file.exists()) {
+            load(file.inputStream())
+        }
+    }
+    val imgApiKey = localProperties["IMG_API_KEY"] as String? ?: "\"MISSING_KEY\""
+
+
     defaultConfig {
         applicationId = "com.example.taller3"
         minSdk = 24
@@ -15,6 +26,9 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "IMG_API_KEY", "\"$imgApiKey\"")
+
     }
 
     buildTypes {
@@ -47,19 +61,18 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
 
-    // UI extra
-    implementation("androidx.recyclerview:recyclerview:1.2.1")
+// UI extra
+    implementation(libs.androidx.recyclerview)
     implementation("de.hdodenhof:circleimageview:3.1.0")
     implementation("com.github.bumptech.glide:glide:4.12.0")
-    implementation(libs.androidx.room.runtime.android)
     annotationProcessor("com.github.bumptech.glide:compiler:4.12.0")
 
-    // Firebase BoM y servicios
-    implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
-    implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.firebase:firebase-storage-ktx")
+// Firebase
+    implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.storage.ktx)
+    implementation(libs.firebase.inappmessaging)
 
     // Google Play Services
     implementation("com.google.android.gms:play-services-maps:18.2.0")
@@ -82,8 +95,7 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    // OpenStreetMap + OSM Bonuspack
+    // OpenStreetMap
     implementation("org.osmdroid:osmdroid-android:6.1.18")
     implementation("androidx.preference:preference-ktx:1.2.1")
-    implementation("com.github.MKergall:osmbonuspack:6.8.0")
 }

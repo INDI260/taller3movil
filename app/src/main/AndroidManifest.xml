@@ -29,6 +29,16 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Taller3"
         tools:targetApi="31">
+        <activity
+            android:name=".UsuariosDisponiblesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Mapas.DisponibleActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Mapas.LocationsActivity"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.example.taller3.fileprovider"
