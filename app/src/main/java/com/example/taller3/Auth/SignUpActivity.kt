@@ -105,46 +105,43 @@ class SignUpActivity : AppCompatActivity() {
 
             auth.createUserWithEmailAndPassword(datos.first.email, datos.second)
                 .addOnSuccessListener {
+                    val uid = auth.currentUser!!.uid
+                    val usuarioInicial = Usuario(
+                        nombre = datos.first.nombre,
+                        apellido = datos.first.apellido,
+                        email = datos.first.email,
+                        id = uid,
+                        fotoPerfilUrl = "",
+                        latitud = latitud,
+                        longitud = longitud,
+                        disponible = false
+                    )
 
-                    ManejadorImagenes.subirImagen(baseContext, BuildConfig.IMG_API_KEY, uriImagenPerfil!!) { success, message ->
-                        if (success) {
+                    db.collection("usuarios").document(uid).set(usuarioInicial)
+                        .addOnSuccessListener {
+                            Toast.makeText(this, "Cuenta creada, subiendo imagen...", Toast.LENGTH_SHORT).show()
 
-                            val url = JSONObject(message).getJSONObject("data").getString("url")
-                            urlImagenPerfil = url
-                            Log.i("subirImagen", urlImagenPerfil)
-
-                            val uid = auth.currentUser!!.uid
-                            val usuarioFinal = Usuario(
-                                nombre = datos.first.nombre,
-                                apellido = datos.first.apellido,
-                                email = datos.first.email,
-                                id = uid,
-                                fotoPerfilUrl = urlImagenPerfil,
-                                latitud = latitud,
-                                longitud = longitud,
-                                disponible = false
-                            )
-
-                            db.collection("usuarios").document(uid).set(usuarioFinal)
-                                .addOnSuccessListener {
-                                    Toast.makeText(this, "Cuenta creada 🎉", Toast.LENGTH_SHORT).show()
-                                    finish()
+                            ManejadorImagenes.subirImagen(baseContext, BuildConfig.IMG_API_KEY, uriImagenPerfil!!) { success, message ->
+                                if (success) {
+                                    val url = JSONObject(message).getJSONObject("data").getString("url")
+                                    db.collection("usuarios").document(uid)
+                                        .update("fotoPerfilUrl", url)
+                                } else {
+                                    Log.e("subirImagen", "Fallo al subir imagen: $message")
                                 }
-                                .addOnFailureListener {
-                                    Toast.makeText(this, "Error en Firestore", Toast.LENGTH_SHORT).show()
-                                }
+                            }
 
-                        } else {
-                            Log.i("subirImagen", message.toString())
+                            finish()
                         }
-                    }
-
-
+                        .addOnFailureListener {
+                            Toast.makeText(this, "Error en Firestore", Toast.LENGTH_SHORT).show()
+                        }
                 }
                 .addOnFailureListener {
                     Toast.makeText(this, "Error al registrar", Toast.LENGTH_SHORT).show()
                 }
         }
+
     }
 
     private fun obtenerUbicacion() {

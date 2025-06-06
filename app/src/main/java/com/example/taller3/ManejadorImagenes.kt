@@ -2,6 +2,8 @@ package com.example.taller3
 
 import android.content.Context
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.provider.OpenableColumns
 import android.widget.ImageView
 import com.bumptech.glide.Glide
@@ -26,6 +28,8 @@ object ManejadorImagenes {
         context: Context,
         apiKey: String,
         imageUri: Uri,
+        maxRetries: Int = 3,
+        delayMillis: Long = 2000,
         callback: (Boolean, String?) -> Unit
     ) {
         // 1. Crear cliente
@@ -46,7 +50,6 @@ object ManejadorImagenes {
             callback(false, "Error leyendo el Uri: ${e.message}")
             return
         }
-
         // 3. Intentar obtener un nombre de archivo legible
         val fileName: String = runCatching {
             val cursor = context.contentResolver.query(imageUri, null, null, null, null)
@@ -72,21 +75,38 @@ object ManejadorImagenes {
             .post(requestBody)
             .build()
 
-        // 7. Ejecución asíncrona
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                callback(false, e.message)
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                response.use {
-                    if (!response.isSuccessful) {
-                        callback(false, "Unexpected code $response")
+        fun attemptUpload(attempt: Int) {
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    if (attempt < maxRetries) {
+                        // Reintento con delay
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            attemptUpload(attempt + 1)
+                        }, delayMillis * attempt)
                     } else {
-                        callback(true, response.body?.string())
+                        callback(false, "Error tras $maxRetries intentos: ${e.message}")
                     }
                 }
-            }
-        })
+
+                override fun onResponse(call: Call, response: Response) {
+                    response.use {
+                        if (!response.isSuccessful) {
+                            if (attempt < maxRetries) {
+                                Handler(Looper.getMainLooper()).postDelayed({
+                                    attemptUpload(attempt + 1)
+                                }, delayMillis * attempt)
+                            } else {
+                                callback(false, "Fallo tras $maxRetries intentos: $response")
+                            }
+                        } else {
+                            callback(true, response.body?.string())
+                        }
+                    }
+                }
+            })
+        }
+
+        attemptUpload(1)
     }
+
 }

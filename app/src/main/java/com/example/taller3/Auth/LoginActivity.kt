@@ -29,6 +29,7 @@ import com.example.taller3.MenuAccountActivity
 import com.example.taller3.R
 import com.example.taller3.databinding.ActivityLoginBinding
 import com.example.taller3.Mapas.LocationsActivity
+import com.example.taller3.Notifs.ServicioNotif
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
@@ -63,7 +64,11 @@ class LoginActivity : AppCompatActivity() {
         notifPermissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { isGranted ->
-            if (!isGranted) {
+            if (isGranted) {
+                Intent(this, ServicioNotif::class.java).also { intent ->
+                    ContextCompat.startForegroundService(this, intent)
+                }
+            } else {
                 if (!shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
                     Toast.makeText(this, "Necesitamos notificaciones para mostrar cambios en usuarios", Toast.LENGTH_LONG).show()
                     notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -72,9 +77,14 @@ class LoginActivity : AppCompatActivity() {
                 }
             }
         }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_DENIED) {
-                notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            when (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)) {
+                PackageManager.PERMISSION_GRANTED -> {
+                }
+                PackageManager.PERMISSION_DENIED -> {
+                    notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
             }
         }
 
